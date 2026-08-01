@@ -114,6 +114,7 @@
     $("#btn-play").classList.remove("playing");
     $("#btn-play").textContent = "▶";
     progress.value = 0;
+    progress.style.setProperty("--progress", "0%");
   }
 
   /* ---------- 播放 / 暂停 ---------- */
@@ -138,6 +139,14 @@
   });
 
   /* ---------- 进度条（可拖动 seek） ---------- */
+  /* 切换音频源后（换语言/换书）元数据重新加载，进度条归零，
+     并复位 scrubbing，避免拖动状态残留导致进度条冻结 */
+  audio.addEventListener("loadedmetadata", () => {
+    scrubbing = false;
+    progress.value = 0;
+    progress.style.setProperty("--progress", "0%");
+  });
+
   audio.addEventListener("timeupdate", () => {
     if (!scrubbing && audio.duration) {
       progress.value = Math.round((audio.currentTime / audio.duration) * 1000);

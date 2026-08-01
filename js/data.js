@@ -22,7 +22,7 @@ const BOOKS = [
     },
     videos: [
       { title: "《丛林里的狂欢派对》（官方中文）", url: "https://www.bilibili.com/video/BV1TaArzWE7v", desc: "Jollybaby 官方号 · 3:40" },
-      { title: "丛林尾巴书双语完整带读（英文）", url: "https://www.bilibili.com/video/BV1EY4y1R7WX", desc: "水熊妈咪 · 3:56 · 逐页朗读" }
+      { title: "丛林尾巴书双语完整带读（参考）", url: "https://www.bilibili.com/video/BV1EY4y1R7WX", desc: "水熊妈咪 · 3:56 · 英文音频为 AI 朗读完整故事" }
     ],
     pages: [
       {
@@ -138,7 +138,7 @@ const BOOKS = [
     },
     videos: [
       { title: "《开心农场》（官方中文）", url: "https://www.bilibili.com/video/BV12UPWzrEyJ", desc: "Jollybaby 官方号 · 5:02" },
-      { title: "全英《Farm Tails》分享（英文）", url: "https://www.bilibili.com/video/BV1YN411n7JU", desc: "Ryan是坨肉松 · 3:51 · 全英朗读" }
+      { title: "全英《Farm Tails》分享（参考）", url: "https://www.bilibili.com/video/BV1YN411n7JU", desc: "Ryan是坨肉松 · 3:51 · 英文音频为 AI 朗读完整故事" }
     ],
     pages: [
       {
@@ -196,7 +196,7 @@ const BOOKS = [
     },
     videos: [
       { title: "恐龙尾巴早教小故事（官方中文）", url: "https://www.bilibili.com/video/BV1VY9WB4Ear", desc: "Jollybaby 官方号 · 4:04" },
-      { title: "Dinosaur Tails 布书精读（英文）", url: "https://www.bilibili.com/video/BV1Df4y1E7Wj", desc: "Smiley米Da一家 · 5:26 · 中英带读" }
+      { title: "Dinosaur Tails 布书精读（参考）", url: "https://www.bilibili.com/video/BV1Df4y1E7Wj", desc: "Smiley米Da一家 · 5:26 · 英文音频为 AI 朗读完整故事" }
     ],
     pages: [
       {
