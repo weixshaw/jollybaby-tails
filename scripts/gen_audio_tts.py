@@ -43,6 +43,14 @@ async def synth(text, out_path: Path):
     await tts.save(str(out_path))
 
 
+def mp3_duration(path: Path) -> float:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+        check=True, capture_output=True, text=True)
+    return float(out.stdout.strip())
+
+
 def make_silence(path: Path):
     if not path.exists():
         subprocess.run(
@@ -86,6 +94,21 @@ def main():
                 parts.append(part)
             concat_with_pauses(parts, out)
             print(f"   ✅ 完成 → {out}")
+
+            # 记录逐页时间轴（页时长 + 页间停顿），供 App 字幕精确对齐
+            timeline = []
+            cursor = 0.0
+            for part in parts:
+                dur = mp3_duration(part)
+                timeline.append({"start": round(cursor, 2), "end": round(cursor + dur, 2)})
+                cursor += dur + PAGE_PAUSE_SEC
+            subs_dir = ROOT / "subs"
+            subs_dir.mkdir(exist_ok=True)
+            sub_file = subs_dir / f"{book['id']}-en.json"
+            sub_file.write_text(
+                json.dumps({"book": book["id"], "pages": timeline}, ensure_ascii=False, indent=1),
+                encoding="utf-8")
+            print(f"   📝 时间轴 → {sub_file}")
         finally:
             for part in parts:
                 part.unlink(missing_ok=True)

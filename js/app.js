@@ -9,6 +9,8 @@
   let playerLang = "zh";           // 详情页播放语言
   let currentBook = null;
   let scrubbing = false;           // 是否正在拖动进度条
+  let subTimeline = null;          // 英文逐页时间轴 [{start,end},...]
+  let subIndex = -1;               // 当前字幕页
   const SPEEDS = [0.75, 1, 1.25];
 
   const $ = (sel) => document.querySelector(sel);
@@ -21,6 +23,9 @@
 
   const audio = $("#audio");
   const progress = $("#progress-bar");
+  const subBox = $("#subtitle-box");
+  const subText = $("#subtitle-content");
+  const subHint = $("#subtitle-hint");
 
   /* ---------- 工具 ---------- */
   function showView(name) {
@@ -94,6 +99,9 @@
     $("#player-meta").textContent =
       (playerLang === "zh" ? "中文讲解" : "English Story") + " · " + currentBook.zh;
 
+    loadSubs();
+    hideSubtitle();
+
     // 检查音频是否存在；缺失时给提示但不阻断
     $("#missing-tip")?.remove();
     fetch(src, { method: "HEAD" }).then((res) => {
@@ -107,6 +115,79 @@
     }).catch(() => { /* 本地 file:// 打开时 HEAD 可能被拒，静默 */ });
 
     stopPlayback();
+  }
+
+  /* ---------- 播放字幕（歌词式） ---------- */
+  function loadSubs() {
+    subTimeline = null;
+    subIndex = -1;
+    if (playerLang !== "en") return;
+    fetch(`subs/${currentBook.id}-en.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { subTimeline = data && data.pages ? data.pages : null; })
+      .catch(() => { subTimeline = null; });
+  }
+
+  /* 当前播放时间对应的字幕页索引 */
+  function currentSubIndex() {
+    if (!audio.duration || !currentBook) return 0;
+    const t = audio.currentTime;
+    const n = currentBook.pages.length;
+
+    // 英文：优先用生成时的精确时间轴；也可用 data.js 的 pageStarts 校准
+    if (playerLang === "en") {
+      const timeline = subTimeline || (currentBook.pageStarts && currentBook.pageStarts.map((s, i) => ({ start: s, end: currentBook.pageStarts[i + 1] })));
+      if (timeline && timeline.length === n) {
+        for (let i = 0; i < n; i++) {
+          const end = timeline[i].end != null ? timeline[i].end : (timeline[i + 1] ? timeline[i + 1].start : Infinity);
+          if (t >= timeline[i].start && t < end) return i;
+        }
+        return n - 1;
+      }
+    }
+    // 中文（官方音频无逐页时间轴）：按页均分；可用 pageStarts 精确校准
+    if (currentBook.pageStarts && currentBook.pageStarts.length === n) {
+      for (let i = n - 1; i >= 0; i--) {
+        if (t >= currentBook.pageStarts[i]) return i;
+      }
+      return 0;
+    }
+    return Math.min(n - 1, Math.max(0, Math.floor((t / audio.duration) * n)));
+  }
+
+  function renderSubtitle() {
+    const idx = currentSubIndex();
+    if (idx === subIndex || !currentBook) return;
+    subIndex = idx;
+    const page = currentBook.pages[idx];
+    subText.textContent = playerLang === "zh" ? page.zh : page.en;
+    subHint.textContent = `第 ${idx + 1} / ${currentBook.pages.length} 页`;
+    startSubtitleScroll();
+  }
+
+  /* 内容超出字幕框时缓慢上滚 */
+  function startSubtitleScroll() {
+    subText.classList.remove("scrolling");
+    subText.style.animation = "none";
+    void subText.offsetWidth; // 强制 reflow 以重启动画
+    const overflow = subText.scrollHeight - subBox.clientHeight;
+    if (overflow > 4) {
+      subText.style.setProperty("--scroll-distance", `-${overflow}px`);
+      subText.style.setProperty("--scroll-duration", `${Math.max(3, overflow / 24)}s`);
+      subText.classList.add("scrolling");
+    }
+  }
+
+  function showSubtitle() {
+    $("#player-cover").classList.add("hidden");
+    subBox.classList.add("active");
+    renderSubtitle();
+  }
+
+  function hideSubtitle() {
+    $("#player-cover").classList.remove("hidden");
+    subBox.classList.remove("active");
+    subIndex = -1;
   }
 
   function stopPlayback() {
@@ -128,6 +209,7 @@
 
   audio.addEventListener("play", () => {
     $("#btn-play").classList.add("playing");
+    showSubtitle();
   });
   audio.addEventListener("pause", () => {
     $("#btn-play").classList.remove("playing");
@@ -151,6 +233,7 @@
     if (!scrubbing && audio.duration) {
       progress.value = Math.round((audio.currentTime / audio.duration) * 1000);
       progress.style.setProperty("--progress", (progress.value / 10) + "%");
+      renderSubtitle();
     }
   });
 
@@ -163,6 +246,7 @@
       audio.currentTime = (progress.value / 1000) * audio.duration;
     }
     scrubbing = false;
+    renderSubtitle();
   });
 
   /* ---------- 快进 / 快退 15 秒 ---------- */
