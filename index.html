@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FF8C42">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐯</text></svg>">
+<title>Jollybaby 尾巴书乐园</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ========== 首页：书籍列表 ========== -->
+<div id="view-home" class="view">
+  <header class="app-header">
+    <h1 class="app-logo">🐯 尾巴书乐园</h1>
+    <p class="app-subtitle">Jollybaby 布书 · 中英文讲解 · 跟我读</p>
+    <nav class="lang-tabs" id="lang-tabs">
+      <button class="tab active" data-lang="zh">🇨🇳 中文</button>
+      <button class="tab" data-lang="en">🇬🇧 English</button>
+    </nav>
+  </header>
+
+  <main id="book-grid" class="book-grid"></main>
+
+  <footer class="hint">点开一本书 → 听讲解 / 📖 跟着读</footer>
+</div>
+
+<!-- ========== 详情页：播放 ========== -->
+<div id="view-detail" class="view hidden">
+  <header class="detail-header">
+    <button id="btn-back" class="back-btn" aria-label="返回">‹</button>
+    <div class="detail-title">
+      <span id="detail-emoji" class="detail-emoji"></span>
+      <div>
+        <h2 id="detail-zh"></h2>
+        <p id="detail-en"></p>
+      </div>
+    </div>
+  </header>
+
+  <section class="player-card">
+    <div class="player-lang-switch" id="player-lang-switch">
+      <button data-lang="zh">中文</button>
+      <button data-lang="en">English</button>
+    </div>
+    <div class="player-cover" id="player-cover"></div>
+    <button id="btn-play" class="play-btn" aria-label="播放">▶</button>
+    <div class="player-meta" id="player-meta"></div>
+    <div class="progress-wrap">
+      <input type="range" id="progress-bar" class="progress-bar" min="0" max="1000" value="0" step="1" aria-label="进度">
+    </div>
+    <div class="player-controls">
+      <button id="btn-rewind" class="ctrl-btn" aria-label="快退 15 秒">⏪15</button>
+      <button id="btn-speed" class="ctrl-btn" aria-label="播放速度">1.0×</button>
+      <button id="btn-forward" class="ctrl-btn" aria-label="快进 15 秒">15⏩</button>
+    </div>
+    <label class="loop-toggle">
+      <input type="checkbox" id="loop-toggle" checked> 🔁 循环播放
+    </label>
+    <audio id="audio" preload="metadata"></audio>
+  </section>
+
+  <div class="detail-actions">
+    <button id="btn-read" class="action-btn read-btn">📖 朗读模式 · 跟我读</button>
+  </div>
+
+  <section id="video-section" class="video-section hidden">
+    <h3>🎬 讲解视频</h3>
+    <div id="video-list"></div>
+  </section>
+</div>
+
+<!-- ========== 朗读模式：全屏图文翻页 ========== -->
+<div id="view-reader" class="view reader hidden">
+  <header class="reader-header">
+    <button id="btn-reader-back" class="back-btn" aria-label="返回">‹</button>
+    <div class="reader-title">
+      <span id="reader-emoji"></span>
+      <span id="reader-title-text"></span>
+    </div>
+  </header>
+
+  <main id="reader-pages" class="reader-pages">
+    <!-- 由 JS 渲染：每页一张卡片，横滑翻页 -->
+  </main>
+
+  <footer class="reader-footer">
+    <span id="reader-page-info"></span>
+    <div class="reader-nav">
+      <button id="btn-lang-mode" class="lang-mode-btn" aria-label="语言模式">中英</button>
+      <button id="btn-prev" aria-label="上一页">‹</button>
+      <button id="btn-next" aria-label="下一页">›</button>
+    </div>
+  </footer>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/reader.js"></script>
+</body>
+</html>
