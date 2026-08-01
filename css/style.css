@@ -174,12 +174,12 @@ body {
   margin: 0;
 }
 
-/* ---------- 播放字幕（歌词式） ---------- */
+/* ---------- 播放字幕（仅英文，歌词式，JS 逐帧滚动） ---------- */
 .subtitle-box {
   display: none;
-  height: 148px;
+  height: 172px;
   margin: 6px 2px 8px;
-  padding: 12px 14px;
+  padding: 12px 14px 22px;
   border-radius: 14px;
   background: #FFF3E0;
   border: 1px solid #F5DFC0;
@@ -196,15 +196,6 @@ body {
   color: var(--ink);
   text-align: left;
   will-change: transform;
-}
-
-.subtitle-content.scrolling {
-  animation: subtitle-scroll var(--scroll-duration, 8s) linear forwards;
-}
-
-@keyframes subtitle-scroll {
-  from { transform: translateY(0); }
-  to { transform: translateY(var(--scroll-distance, -80px)); }
 }
 
 .subtitle-hint {

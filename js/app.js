@@ -117,7 +117,12 @@
     stopPlayback();
   }
 
-  /* ---------- 播放字幕（歌词式） ---------- */
+  /* ---------- 播放字幕（仅英文，歌词式） ---------- */
+  let scrollRaf = null;        // 滚动动画帧
+  let scrollElapsed = 0;       // 已滚动时长(ms)
+  let scrollTotal = 0;         // 总滚动时长(ms)
+  let scrollStart = 0;         // 本次滚动起点
+
   function loadSubs() {
     subTimeline = null;
     subIndex = -1;
@@ -128,29 +133,19 @@
       .catch(() => { subTimeline = null; });
   }
 
-  /* 当前播放时间对应的字幕页索引 */
+  /* 当前播放时间对应的字幕页索引（英文精确时间轴 / 中文均分兜底） */
   function currentSubIndex() {
     if (!audio.duration || !currentBook) return 0;
     const t = audio.currentTime;
     const n = currentBook.pages.length;
 
-    // 英文：优先用生成时的精确时间轴；也可用 data.js 的 pageStarts 校准
-    if (playerLang === "en") {
-      const timeline = subTimeline || (currentBook.pageStarts && currentBook.pageStarts.map((s, i) => ({ start: s, end: currentBook.pageStarts[i + 1] })));
-      if (timeline && timeline.length === n) {
-        for (let i = 0; i < n; i++) {
-          const end = timeline[i].end != null ? timeline[i].end : (timeline[i + 1] ? timeline[i + 1].start : Infinity);
-          if (t >= timeline[i].start && t < end) return i;
-        }
-        return n - 1;
+    const timeline = subTimeline || (currentBook.pageStarts && currentBook.pageStarts.map((s, i) => ({ start: s, end: currentBook.pageStarts[i + 1] })));
+    if (timeline && timeline.length === n) {
+      for (let i = 0; i < n; i++) {
+        const end = timeline[i].end != null ? timeline[i].end : (timeline[i + 1] ? timeline[i + 1].start : Infinity);
+        if (t >= timeline[i].start && t < end) return i;
       }
-    }
-    // 中文（官方音频无逐页时间轴）：按页均分；可用 pageStarts 精确校准
-    if (currentBook.pageStarts && currentBook.pageStarts.length === n) {
-      for (let i = n - 1; i >= 0; i--) {
-        if (t >= currentBook.pageStarts[i]) return i;
-      }
-      return 0;
+      return n - 1;
     }
     return Math.min(n - 1, Math.max(0, Math.floor((t / audio.duration) * n)));
   }
@@ -162,20 +157,39 @@
     const page = currentBook.pages[idx];
     subText.textContent = playerLang === "zh" ? page.zh : page.en;
     subHint.textContent = `第 ${idx + 1} / ${currentBook.pages.length} 页`;
-    startSubtitleScroll();
+    resetSubtitleScroll();
   }
 
-  /* 内容超出字幕框时缓慢上滚 */
-  function startSubtitleScroll() {
-    subText.classList.remove("scrolling");
-    subText.style.animation = "none";
-    void subText.offsetWidth; // 强制 reflow 以重启动画
+  /* 内容超出字幕框时逐帧上滚（暂停时停住，恢复播放时继续） */
+  function resetSubtitleScroll() {
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    scrollElapsed = 0;
+    subText.style.transform = "translateY(0)";
     const overflow = subText.scrollHeight - subBox.clientHeight;
-    if (overflow > 4) {
-      subText.style.setProperty("--scroll-distance", `-${overflow}px`);
-      subText.style.setProperty("--scroll-duration", `${Math.max(3, overflow / 24)}s`);
-      subText.classList.add("scrolling");
-    }
+    if (overflow <= 4) { scrollTotal = 0; return; }
+    scrollTotal = Math.max(3, overflow / 24) * 1000;
+    if (!audio.paused) tickSubtitleScroll();
+  }
+
+  function tickSubtitleScroll() {
+    scrollStart = performance.now();
+    const step = (now) => {
+      scrollElapsed = Math.min(scrollTotal, scrollElapsed + (now - scrollStart));
+      scrollStart = now;
+      const dist = (scrollElapsed / scrollTotal) * (subText.scrollHeight - subBox.clientHeight);
+      subText.style.transform = `translateY(${-dist}px)`;
+      if (scrollElapsed < scrollTotal) scrollRaf = requestAnimationFrame(step);
+      else scrollRaf = null;
+    };
+    scrollRaf = requestAnimationFrame(step);
+  }
+
+  function pauseSubtitleScroll() {
+    if (scrollRaf) { cancelAnimationFrame(scrollRaf); scrollRaf = null; }
+  }
+
+  function resumeSubtitleScroll() {
+    if (scrollTotal > 0 && !scrollRaf && scrollElapsed < scrollTotal) tickSubtitleScroll();
   }
 
   function showSubtitle() {
@@ -188,6 +202,10 @@
     $("#player-cover").classList.remove("hidden");
     subBox.classList.remove("active");
     subIndex = -1;
+    pauseSubtitleScroll();
+    scrollElapsed = 0;
+    scrollTotal = 0;
+    subText.style.transform = "translateY(0)";
   }
 
   function stopPlayback() {
@@ -209,11 +227,15 @@
 
   audio.addEventListener("play", () => {
     $("#btn-play").classList.add("playing");
-    showSubtitle();
+    if (playerLang === "en") {
+      showSubtitle();
+      resumeSubtitleScroll();
+    }
   });
   audio.addEventListener("pause", () => {
     $("#btn-play").classList.remove("playing");
     $("#btn-play").textContent = "▶";
+    pauseSubtitleScroll();
   });
   audio.addEventListener("ended", () => {
     $("#btn-play").classList.remove("playing");
